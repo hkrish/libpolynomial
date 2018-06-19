@@ -1,3 +1,4 @@
 *.dylib
 res_*.txt
 tests
+build/
