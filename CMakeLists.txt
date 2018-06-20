@@ -9,10 +9,9 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11")
 
 project(libPolynomial5 LANGUAGES C CXX)
 
-set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 set(CMAKE_C_FLAGS_RELEASE "-O3 -Wall -Wpedantic")
 set(CMAKE_C_FLAGS_DEBUG "-g -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native -mfpmath=sse -msse2")
 
 include_directories(
   )
