@@ -10,7 +10,7 @@
  */
 
 
-#include "Polynomial.h"
+#include "Polynomial5.h"
 
 #define EXPORT __attribute__((visibility("default")))
 

@@ -6,7 +6,7 @@
 #include <time.h>
 #include <mach/mach_time.h>
 
-#include "Polynomial.h"
+#include "../src/Polynomial5.h"
 
 
 

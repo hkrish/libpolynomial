@@ -11,7 +11,9 @@ project(libPolynomial5 LANGUAGES C CXX)
 
 set(CMAKE_C_FLAGS_RELEASE "-O3 -Wall -Wpedantic")
 set(CMAKE_C_FLAGS_DEBUG "-g -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native -mfpmath=sse -msse2")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpmath=sse -msse2")
 
 include_directories(
   )
@@ -20,8 +22,8 @@ link_directories(
   )
 
 set(libsrc
-  src/Polynomial.h
-  src/Polynomial.c
+  src/Polynomial5.h
+  src/Polynomial5.c
   )
 
 add_library(polynomial5static STATIC ${libsrc})
@@ -39,3 +41,6 @@ target_link_libraries(
   polynomial5
   "m"
   )
+
+install(TARGETS polynomial5 polynomial5static DESTINATION lib)
+install(FILES src/Polynomial5.h DESTINATION include)
