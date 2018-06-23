@@ -13,7 +13,7 @@ set(CMAKE_C_FLAGS_RELEASE "-O3 -Wall -Wpedantic")
 set(CMAKE_C_FLAGS_DEBUG "-g -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
 
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpmath=sse -msse2")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpmath=sse -msse2")
 
 include_directories(
   )
