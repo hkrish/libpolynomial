@@ -109,12 +109,9 @@ static int poly_quadroots_LD(long double a, long double b, long double c,
     if (fabs(D) < EPS_M2) {
         // Normalise coefficients. Normalisation is done by scaling coefficients
         // with a *power of 2*, so that all the bits in the mantissa remain unchanged.
-        long double a_ = fabsl(a);
-        long double b_ = fabsl(b);
-        long double c_ = fabsl(c);
-        long double sc = a_ + b_ + c_;
-        sc = (sc == 0) ? DBL_EPSILON : sc;
-        long double p = exp2l(-floorl(log2l(sc) + 0.5));
+        long double s = fmaxl(fabsl(a), fmaxl(fabsl(b), fabsl(c)));
+        s = (s == 0) ? LDBL_EPSILON : s;
+        long double p = exp2l(-floorl(log2l(s)));
         a *= p;
         b *= p;
         c *= p;
@@ -194,7 +191,7 @@ static int poly_cubicroots_LD(long double a, long double b, long double c, long 
 	long double c2;
     // Normalise coefficients a la *Jenkins & Traub's RPOLY*
     long double s = fmaxl(fabsl(a), fmaxl(fabsl(b), fmaxl(fabsl(c), fabsl(d))));
-    if (s < 1 || s > 1e7) {
+    if ((s < 1e-7 || s > 1e7) && s != 0) {
         // Scale the coefficients by a multiple of the exponent of ||coeffs.||
         // so that all the bits in the mantissa are preserved.
         long double p = exp2l(-floorl(log2l(s)));
@@ -302,27 +299,11 @@ int poly_cubicroots(double ac , double bc , double cc , double dc,
 }
 
 
-/**
- * Solve a quartic equation, using numerically stable methods,
- * given an equation of the form `ax^4 + bx^3 + cx^2 + dx + e = 0`.
- * This algorithm uses the robust cubic and quartic solvers to avoid
- * roundoff errors as much as possible.
- *
- * - parameters:
- * - ac: Coefficient of x^4
- * - bc: Coefficient of x^3
- * - cc: Coefficient of x^2
- * - dc: Coefficient of x
- * - ec: Coefficient of 1
- * - minB: The minimum bound of valid roots; `roots < minB` are omited
- * - maxB: The maximum bound of valid roots; `roots > maxB` are omited
- * - x1, x2, x3, x4: Pointers to set the roots.
- * - returns: The number of real roots of the quartic.
- */
-EXPORT
-int poly_quartroots(double ac, double bc, double cc, double dc, double ec,
-                    double minB, double maxB,
-                    double *x1, double *x2, double *x3, double *x4)
+/* Internal method that accepts long doubles */
+static int poly_quartroots_LD(long double an, long double bn, long double cn, long double dn,
+                              long double en, double minB, double maxB,
+                              double *x1, double *x2, double *x3, double *x4,
+                              int should_polish_roots)
 {
     *x1 = INFINITY;
     *x2 = INFINITY;
@@ -339,14 +320,14 @@ int poly_quartroots(double ac, double bc, double cc, double dc, double ec,
     } while(0)
 
     // Normalise coefficients a la *Jankins & Traub's RPOLY*
-    long double an=(long double)ac;
-    long double bn=(long double)bc;
-    long double cn=(long double)cc;
-    long double dn=(long double)dc;
-    long double en=(long double)ec;
-    long double s = fmaxl(fabsl(an), fmaxl(fabsl(bn),
-                                           fmaxl(fabsl(cn), fmaxl(fabsl(dn), fabsl(en)))));
-    if (s < 1 || s > 1e7) {
+    /* long double an=(long double)ac; */
+    /* long double bn=(long double)bc; */
+    /* long double cn=(long double)cc; */
+    /* long double dn=(long double)dc; */
+    /* long double en=(long double)ec; */
+    long double s = fmaxl(fabsl(an),
+                          fmaxl(fabsl(bn), fmaxl(fabsl(cn), fmaxl(fabsl(dn), fabsl(en)))));
+    if ((s < 1 || s > 1e7) && s != 0) {
         // Scale the coefficients by a multiple of the exponent of ||coeffs.||
         // so that all the bits in the mantissa are preserved
         long double p = exp2l(-floorl(log2l(s)));
@@ -422,7 +403,6 @@ int poly_quartroots(double ac, double bc, double cc, double dc, double ec,
                 }
             }
         }
-        /* return rCount; */
     } else if (fabsl(f) <= EPS_M2_L) {
         // `f ~= 0`  ⇒  `y^4 + e y^2 + g`  is a quadratic in y^2
         double qr1 = 0;
@@ -450,7 +430,6 @@ int poly_quartroots(double ac, double bc, double cc, double dc, double ec,
                 APPEND_ROOT4(r4);
             }
         }
-        /* return rCount; */
     } else {
         // Coefficients of cubic in h^2
         double b1 = (double)(2.0L*e);
@@ -507,10 +486,9 @@ int poly_quartroots(double ac, double bc, double cc, double dc, double ec,
             }
         }
     }
-    if (rCount > 0 && rCount <= 4) {
+    if (should_polish_roots && rCount > 0 && rCount <= 4) {
         // Evaluate the original polynomial and try to improve accuracy with a few
         // rounds of Newton-Raphson iterations
-        // TODO:
         int i;
         long double roots[4] = {*x1, *x2, *x3, *x4};
         long double zeros[4] = {0, 0, 0, 0};
@@ -529,20 +507,23 @@ int poly_quartroots(double ac, double bc, double cc, double dc, double ec,
                 long double t = roots[i];
                 long double z = zeros[i];
                 long double dz = ((dan * t + dbn) * t + dcn) * t + ddn;
+                if (dz == 0L) { continue; }
                 t -= z / dz;
                 z = (((an * t + bn) * t + cn) * t + dn) * t + en;
-                if (fabsl(z) < fabsl(zeros[i])) {
+                if (fabsl(z) < fabsl(zeros[i]) && fabsl(z) > EPS_M2_L) {
                     roots[i] = t;
                     // 2nd iteration
                     zeros[i] = z;
                     dz = ((dan * t + dbn) * t + dcn) * t + ddn;
+                    if (dz == 0L) { continue; }
                     t -= z / dz;
                     z = (((an * t + bn) * t + cn) * t + dn) * t + en;
-                    if (fabsl(z) < fabsl(zeros[i])) {
+                    if (fabsl(z) < fabsl(zeros[i]) && fabsl(z) > EPS_M2_L) {
                         roots[i] = t;
                         // 3rd iteration
                         zeros[i] = z;
                         dz = ((dan * t + dbn) * t + dcn) * t + ddn;
+                        if (dz == 0L) { continue; }
                         t -= z / dz;
                         z = (((an * t + bn) * t + cn) * t + dn) * t + en;
                         if (fabsl(z) < fabsl(zeros[i])) {
@@ -555,12 +536,37 @@ int poly_quartroots(double ac, double bc, double cc, double dc, double ec,
             *x2 = roots[1];
             *x3 = roots[2];
             *x4 = roots[3];
-            // TODO: FIX: Solve all quartic+ polynomials in Mathematica,
-            // verify the size of 'zeros' and the test again.
         }
     }
     return rCount;
 #undef APPEND_ROOT4
+}
+
+
+/**
+ * Solve a quartic equation, using numerically stable methods,
+ * given an equation of the form `ax^4 + bx^3 + cx^2 + dx + e = 0`.
+ * This algorithm uses the robust cubic and quartic solvers to avoid
+ * roundoff errors as much as possible.
+ *
+ * - parameters:
+ * - ac: Coefficient of x^4
+ * - bc: Coefficient of x^3
+ * - cc: Coefficient of x^2
+ * - dc: Coefficient of x
+ * - ec: Coefficient of 1
+ * - minB: The minimum bound of valid roots; `roots < minB` are omited
+ * - maxB: The maximum bound of valid roots; `roots > maxB` are omited
+ * - x1, x2, x3, x4: Pointers to set the roots.
+ * - returns: The number of real roots of the quartic.
+ */
+EXPORT
+int poly_quartroots(double an, double bn, double cn, double dn, double en,
+                    double minB, double maxB,
+                    double *x1, double *x2, double *x3, double *x4)
+{
+    return poly_quartroots_LD((long double)an, (long double)bn, (long double)cn, (long double)dn,
+                              (long double)en,  minB,  maxB, x1,  x2,  x3,  x4, 1);
 }
 
 
@@ -634,7 +640,7 @@ static double refine_root(long double a, long double b, long double c, long doub
  * - a..f: Coefficients of the quintic
  * - at: The polynomial will be evaluated at x = at
  * - error: Pointer to set the error bound.
- * - returns: The value of the polynomial.
+ * - returns: The value of the polynomial at 'x = at'.
  */
 static long double eval_quint(long double a, long double b, long double c, long double d,
                               long double e, long double f, double at, long double *error)
@@ -686,18 +692,18 @@ int poly_quintroots(double a0, double b0, double c0, double d0, double e0, doubl
         ++rCount;                               \
     } while(0)
 
-    // Check for obvious cases, f0 == 0, a0 = 0, etc.
-    if (fabs(a0) < EPS_M2) {
-        return poly_quartroots(b0, c0, d0, e0, f0, minB, maxB, x1, x2, x3, x4);
-    }
-    // Solve the quintic
-    // Convert to monic form `P(x) → x^5 + ac x^4 + bc x^3 + cc x^2 + dc x + ec = 0`
     long double a0l = (long double)a0;
     long double b0l = (long double)b0;
     long double c0l = (long double)c0;
     long double d0l = (long double)d0;
     long double e0l = (long double)e0;
     long double f0l = (long double)f0;
+    // Check for obvious cases, f0 == 0, a0 = 0, etc.
+    if (fabs(a0) < EPS_M2) {
+        return poly_quartroots_LD(b0l, c0l, d0l, e0l, f0l, minB, maxB, x1, x2, x3, x4, 1);
+    }
+    // Solve the quintic
+    // Convert to monic form `P(x) → x^5 + ac x^4 + bc x^3 + cc x^2 + dc x + ec = 0`
     long double ac = b0l / a0l;
     long double bc = c0l / a0l;
     long double cc = d0l / a0l;
@@ -719,8 +725,8 @@ int poly_quintroots(double a0, double b0, double c0, double d0, double e0, doubl
         // The depressed quintic is actually a quartic polynomial
         double nMinB = minB + a_5d;
         double nMaxB = maxB + a_5d;
-        rCount = poly_quartroots(1, 0, (double)a, (double)b, (double)c, nMinB, nMaxB,
-                                 x1, x2, x3, x4);
+        rCount = poly_quartroots_LD(1.0L, 0.0L, a, b, c, nMinB, nMaxB,
+                                    x1, x2, x3, x4, 1);
         *x1 -= a_5d;
         *x2 -= a_5d;
         *x3 -= a_5d;
@@ -809,16 +815,20 @@ int poly_quintroots(double a0, double b0, double c0, double d0, double e0, doubl
         t0 = t;
         fr = ((((a0l * t0 + b0l) * t0 + c0l) * t0 + d0l) * t0 + e0l) * t0 + f0l;
         f2r = (((a0ld * t0 + b0ld) * t0 + c0ld) * t0 + d0ld) * t0 + e0ld;
-        t = t0 - fr/f2r;
-        fr2 = ((((a0l * t + b0l) * t + c0l) * t + d0l) * t + e0l) * t + f0l;
-        if (fabsl(fr2) < fabsl(fr)) {
-            t0 = t;
-            fr = ((((a0l * t0 + b0l) * t0 + c0l) * t0 + d0l) * t0 + e0l) * t0 + f0l;
-            f2r = (((a0ld * t0 + b0ld) * t0 + c0ld) * t0 + d0ld) * t0 + e0ld;
+        if (f2r != 0) {
             t = t0 - fr/f2r;
             fr2 = ((((a0l * t + b0l) * t + c0l) * t + d0l) * t + e0l) * t + f0l;
             if (fabsl(fr2) < fabsl(fr)) {
                 t0 = t;
+                fr = ((((a0l * t0 + b0l) * t0 + c0l) * t0 + d0l) * t0 + e0l) * t0 + f0l;
+                f2r = (((a0ld * t0 + b0ld) * t0 + c0ld) * t0 + d0ld) * t0 + e0ld;
+                if (f2r != 0) {
+                    t = t0 - fr/f2r;
+                    fr2 = ((((a0l * t + b0l) * t + c0l) * t + d0l) * t + e0l) * t + f0l;
+                    if (fabsl(fr2) < fabsl(fr)) {
+                        t0 = t;
+                    }
+                }
             }
         }
     }
@@ -834,10 +844,65 @@ int poly_quintroots(double a0, double b0, double c0, double d0, double e0, doubl
     double eq = (double)(e0l + dq*t0);
     int qrs = 0;
     if (isT0Root) {
-        qrs = poly_quartroots(a0, bq, cq, dq, eq, minB, maxB, x2, x3, x4, x5);
+        qrs = poly_quartroots_LD(a0, bq, cq, dq, eq, minB, maxB, x2, x3, x4, x5, 0);
     } else {
-        qrs = poly_quartroots(a0, bq, cq, dq, eq, minB, maxB, x1, x2, x3, x4);
+        qrs = poly_quartroots_LD(a0, bq, cq, dq, eq, minB, maxB, x1, x2, x3, x4, 0);
     }
-    return rCount + qrs;
+    rCount = rCount + qrs;
+    if (rCount > 0 && rCount <= 5) {
+        // Evaluate the original polynomial and try to improve accuracy with a few
+        // rounds of Newton-Raphson iterations
+        int i;
+        long double roots[5] = {*x1, *x2, *x3, *x4, *x5};
+        long double zeros[5] = {0, 0, 0, 0, 0};
+        char should_polish_any_roots = 0;
+        for (i = 0; i < rCount; ++i) {
+            long double t = roots[i];
+            zeros[i] = ((((a0l * t + b0l) * t + c0l) * t + d0l) * t + e0l) * t + f0l;
+            should_polish_any_roots = fabsl(zeros[i]) > EPS_M2_L;
+        }
+        if (should_polish_any_roots) {
+            long double dan = a0l*5;
+            long double dbn = b0l*4;
+            long double dcn = c0l*3;
+            long double ddn = d0l*2;
+            long double den = e0l;
+            for (i = 0; i < rCount; ++i) {
+                long double t = roots[i];
+                long double z = zeros[i];
+                long double dz = (((dan * t + dbn) * t + dcn) * t + ddn) * t + den;
+                if (dz == 0L) { continue; }
+                t -= z / dz;
+                z = ((((a0l * t + b0l) * t + c0l) * t + d0l) * t + e0l) * t + f0l;
+                if (fabsl(z) < fabsl(zeros[i]) && fabsl(z) > EPS_M2_L) {
+                    roots[i] = t;
+                    // 2nd iteration
+                    zeros[i] = z;
+                    dz = (((dan * t + dbn) * t + dcn) * t + ddn) * t + den;
+                    if (dz == 0L) { continue; }
+                    t -= z / dz;
+                    z = ((((a0l * t + b0l) * t + c0l) * t + d0l) * t + e0l) * t + f0l;
+                    if (fabsl(z) < fabsl(zeros[i]) && fabsl(z) > EPS_M2_L) {
+                        roots[i] = t;
+                        // 3rd iteration
+                        zeros[i] = z;
+                        dz = (((dan * t + dbn) * t + dcn) * t + ddn) * t + den;
+                        if (dz == 0L) { continue; }
+                        t -= z / dz;
+                        z = ((((a0l * t + b0l) * t + c0l) * t + d0l) * t + e0l) * t + f0l;
+                        if (fabsl(z) < fabsl(zeros[i])) {
+                            roots[i] = t;
+                        }
+                    }
+                }
+            }
+            *x1 = roots[0];
+            *x2 = roots[1];
+            *x3 = roots[2];
+            *x4 = roots[3];
+            *x5 = roots[4];
+        }
+    }
+    return rCount;
 #undef APPEND_ROOT5
 }
