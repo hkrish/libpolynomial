@@ -97,7 +97,7 @@
     ()
     (0.01325662945878696 0.8351858078659913)))
 
-(define test-no 11)
+(define test-no 9)
 (define coeffs (list-ref tests test-no))
 (define rts (list-ref answers test-no))
 
@@ -159,8 +159,7 @@
                      [b1 (lv/ (lv- c2 c) x)])
                  `(x @(quadroot2 a b1 c2)))
                `(,x ,@(quadroot2 a b1 c2))))
-         `(,x ,@(quadroot2 a b1 c2)))
-     ]))
+         `(,x ,@(quadroot2 a b1 c2)))]))
 
 (define (scale-coeffs cs)
   (define s (apply max (map abs cs)))
@@ -235,7 +234,16 @@
 
   (cond
     [(lv<= (lvabs g) epsilon.0)
-     (void)]
+     (define rs
+       (cons (lv- 0. a_4d)
+             (if (lv<= (lvabs f) epsilon.0)
+                 (if (lv< e 0.)
+                     (let ([qr1 (lvsqrt (lv- 0. e))])
+                       (list (lv- qr1 a_4d) (lv- (lv- 0. qr1 a_4d))))
+                     '())
+                 (let ([ysc (cubroot2 1.0 0.0 e f)])
+                   (map (lambda (r) (lv- r a_4d)) ysc)))))
+     (sort rs < #:key car)]
     [(lv<= (lvabs f) epsilon.0)
      (void)]
     [else
