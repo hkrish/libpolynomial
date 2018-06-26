@@ -1,9 +1,9 @@
 
-#ifndef Polynomial_h__
-#define Polynomial_h__
+#ifndef Polynomial5_h__
+#define Polynomial5_h__
 
 /*!
- * File: Polynomial.h
+ * File: Polynomial5.h
  *
  * Root finding for upto quintic polynomials.
  *
@@ -102,4 +102,4 @@ int poly_quintroots(double a0, double b0, double c0, double d0, double e0, doubl
                     double *x1, double *x2, double *x3, double *x4, double *x5);
 
 
-#endif  // Polynomial_h__
+#endif  // Polynomial5_h__

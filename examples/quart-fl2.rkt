@@ -4,10 +4,10 @@
                      syntax/parse)
          math
          math/flonum
-         (only-in ffi/unsafe ffi-lib _fun _ptr _double _long _int ->)
+         (only-in ffi/unsafe ffi-lib _fun _ptr _double _long _int _int32 ->)
          ffi/unsafe/define)
 
-(define-ffi-definer define-polys (ffi-lib "libPolynomial5"))
+(define-ffi-definer define-polys (ffi-lib "libpolynomial5"))
 (define-ffi-definer define-libm (ffi-lib "libm"))
 
 (define-polys poly_quadroots (_fun _double _double _double
@@ -15,7 +15,7 @@
                                    (_double = +inf.0)
                                    (x1 : (_ptr o _double))
                                    (x2 : (_ptr o _double))
-                                   -> (r : _long)
+                                   -> (r : _int32)
                                    -> (take (list x1 x2) r)))
 
 (define-polys poly_cubicroots (_fun _double _double _double _double
@@ -24,7 +24,7 @@
                                     (x1 : (_ptr o _double))
                                     (x2 : (_ptr o _double))
                                     (x3 : (_ptr o _double))
-                                    -> (r : _long)
+                                    -> (r : _int32)
                                     -> (take (list x1 x2 x3) r)))
 
 (define-polys poly_quartroots (_fun _double _double _double _double _double
@@ -34,7 +34,7 @@
                                     (x2 : (_ptr o _double))
                                     (x3 : (_ptr o _double))
                                     (x4 : (_ptr o _double))
-                                    -> (r : _long)
+                                    -> (r : _int32)
                                     -> (take (list x1 x2 x3 x4) r)))
 
 (define-libm frexp (_fun _double (e : (_ptr o _int))
@@ -163,7 +163,7 @@
 
 (define (scale-coeffs cs)
   (define s (apply max (map abs cs)))
-  (define p (+ 1 (- 0 (frexp s))))
+  (define p (+ 1 (- (frexp s))))
   (map (lambda (c) (scalbn c p)) cs))
 
 (define-syntax-rule (vsl form) (let-values ([(a b) form]) (list a b)))
