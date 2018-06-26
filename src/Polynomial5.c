@@ -99,30 +99,28 @@ static int poly_quadroots_LD(long double a, long double b, long double c,
     b *= -0.5;
     // Calculate discriminant with original coefficients
     long double D = b * b - a * c;
-    // The following test tests the chances of overflow, if yes, evaluate the
-    // discriminant using a split-double routine.
-    long double E = b * b + a * c;
-    const long double pi = 3.0L;
-    if (pi * fabs(D) < E) {
-		D = (long double) poly_discriminant((double) a, (double) b, (double) c);
-    }
-    if (fabs(D) < EPS_M2) {
+    if (fabsl(D) <= 1e-8 || fabsl(D) > 1e8) {
         // Normalise coefficients. Normalisation is done by scaling coefficients
         // with a *power of 2*, so that all the bits in the mantissa remain unchanged.
         long double s = fmaxl(fabsl(a), fmaxl(fabsl(b), fabsl(c)));
         s = (s == 0) ? LDBL_EPSILON : s;
-        long double p = exp2l(-floorl(log2l(s)));
-        a *= p;
-        b *= p;
-        c *= p;
+        int sc = 0;
+        frexpl(s, &sc);
+        sc = 1 - sc;
+        a = scalbnl(a, sc);
+        b = scalbnl(b, sc);
+        B = scalbnl(B, sc);
+        c = scalbnl(c, sc);
         // Recalculate discriminant
         D = b * b - a * c;
-		E = b * b + a * c;
-		B = -2.0 * b;
-        if (pi * fabs(D) < E) {
-			D = (long double) poly_discriminant((double) a, (double) b, (double) c);
-        }
     }
+    // The following test tests the chances of overflow, if yes, evaluate the
+    // discriminant using a split-double routine.
+    long double E = b * b + a * c;
+    if (3.0L * fabsl(D) < E) {
+		D = (long double) poly_discriminant((double) a, (double) b, (double) c);
+    }
+
     if (fabsl(a) < EPS_M2) {
         if (fabsl(B) < EPS_M2) {
             return 0;
@@ -194,11 +192,13 @@ static int poly_cubicroots_LD(long double a, long double b, long double c, long 
     if ((s < 1e-7 || s > 1e7) && s != 0) {
         // Scale the coefficients by a multiple of the exponent of ||coeffs.||
         // so that all the bits in the mantissa are preserved.
-        long double p = exp2l(-floorl(log2l(s)));
-        a = a*p;
-        b = b*p;
-        c = c*p;
-        d = d*p;
+        int sc = 0;
+        frexpl(s, &sc);
+        sc = 1 - sc;
+        a = scalbnl(a, sc);
+        b = scalbnl(b, sc);
+        c = scalbnl(c, sc);
+        d = scalbnl(d, sc);
     }
     // If a or d is zero, we only need to solve a quadratic, so we set
     // the coefficients appropriately.
@@ -320,22 +320,19 @@ static int poly_quartroots_LD(long double an, long double bn, long double cn, lo
     } while(0)
 
     // Normalise coefficients a la *Jankins & Traub's RPOLY*
-    /* long double an=(long double)ac; */
-    /* long double bn=(long double)bc; */
-    /* long double cn=(long double)cc; */
-    /* long double dn=(long double)dc; */
-    /* long double en=(long double)ec; */
     long double s = fmaxl(fabsl(an),
                           fmaxl(fabsl(bn), fmaxl(fabsl(cn), fmaxl(fabsl(dn), fabsl(en)))));
     if ((s < 1 || s > 1e7) && s != 0) {
         // Scale the coefficients by a multiple of the exponent of ||coeffs.||
         // so that all the bits in the mantissa are preserved
-        long double p = exp2l(-floorl(log2l(s)));
-        an*=p;
-        bn*=p;
-        cn*=p;
-        dn*=p;
-        en*=p;
+        int sc = 0;
+        frexpl(s, &sc);
+        sc = 1 - sc;
+        an = scalbnl(an, sc);
+        bn = scalbnl(bn, sc);
+        cn = scalbnl(cn, sc);
+        dn = scalbnl(dn, sc);
+        en = scalbnl(en, sc);
     }
     if (fabsl(an) < EPS_M2_L) {
         // the polynomial is actually a cubic
@@ -698,6 +695,24 @@ int poly_quintroots(double a0, double b0, double c0, double d0, double e0, doubl
     long double d0l = (long double)d0;
     long double e0l = (long double)e0;
     long double f0l = (long double)f0;
+    // Normalise coefficients a la *Jankins & Traub's RPOLY*
+    long double s = fmaxl(fabsl(a0l),
+                          fmaxl(fabsl(b0l),
+                                fmaxl(fabsl(c0l),
+                                      fmaxl(fabsl(d0l), fmaxl(fabsl(e0l), fabsl(f0l))))));
+    if ((s < 1 || s > 1e7) && s != 0) {
+        // Scale the coefficients by a multiple of the exponent of ||coeffs.||
+        // so that all the bits in the mantissa are preserved
+        int sc = 0;
+        frexpl(s, &sc);
+        sc = 1 - sc;
+        a0l = scalbnl(a0l, sc);
+        b0l = scalbnl(b0l, sc);
+        c0l = scalbnl(c0l, sc);
+        d0l = scalbnl(d0l, sc);
+        e0l = scalbnl(e0l, sc);
+        f0l = scalbnl(f0l, sc);
+    }
     // Check for obvious cases, f0 == 0, a0 = 0, etc.
     if (fabs(a0) < EPS_M2) {
         return poly_quartroots_LD(b0l, c0l, d0l, e0l, f0l, minB, maxB, x1, x2, x3, x4, 1);
