@@ -323,7 +323,7 @@ static int poly_quartroots_LD(long double an, long double bn, long double cn, lo
     // Normalise coefficients a la *Jankins & Traub's RPOLY*
     long double s = fmaxl(fabsl(an),
                           fmaxl(fabsl(bn), fmaxl(fabsl(cn), fmaxl(fabsl(dn), fabsl(en)))));
-    if ((s < 1 || s > 1e7) && s != 0) {
+    if ((s < 1e-7 || s > 1e7) && s != 0) {
         // Scale the coefficients by a multiple of the exponent of ||coeffs.||
         // so that all the bits in the mantissa are preserved
         int sc = 0;
@@ -337,7 +337,7 @@ static int poly_quartroots_LD(long double an, long double bn, long double cn, lo
     }
     if (fabsl(an) < EPS_M2_L) {
         // the polynomial is actually a cubic
-        return poly_cubicroots_LD(bn, cn, dn, en, minB, maxB, x1, x2, x3);
+        return poly_cubicroots(bn, cn, dn, en, minB, maxB, x1, x2, x3);
     }
     // Original quartic `P(x) = ac x^4 + bc x^3 + cc x^2 + dc x + ec = 0`
     // Convert to monic form `P(x) → x^4 + a x^3 + b x^2 + c x + d = 0`
@@ -380,7 +380,7 @@ static int poly_quartroots_LD(long double an, long double bn, long double cn, lo
             double qr1 = 0;
             double qr2 = 0;
             double cr3 = 0;
-            int ysc = poly_cubicroots_LD(1.0, 0.0, e, f, -DBL_MAX, DBL_MAX, &qr1, &qr2, &cr3);
+            int ysc = poly_cubicroots_LD(1.0L, 0.0L, e, f, -DBL_MAX, DBL_MAX, &qr1, &qr2, &cr3);
             if (ysc > 0) {
                 double r = qr1 - a_4d;
                 // Since we already added a root at zero, avoid duplicate roots
@@ -405,7 +405,7 @@ static int poly_quartroots_LD(long double an, long double bn, long double cn, lo
         // `f ~= 0`  ⇒  `y^4 + e y^2 + g`  is a quadratic in y^2
         double qr1 = 0;
         double qr2 = 0;
-        int cr = poly_quadroots_LD(1, e, g, -DBL_MAX, DBL_MAX, &qr1, &qr2);
+        int cr = poly_quadroots_LD(1.0L, e, g, -DBL_MAX, DBL_MAX, &qr1, &qr2);
         if (cr > 0 && qr1 >= 0) {
             double r = sqrt(qr1);
             double r1 = r - a_4d;
@@ -430,13 +430,13 @@ static int poly_quartroots_LD(long double an, long double bn, long double cn, lo
         }
     } else {
         // Coefficients of cubic in h^2
-        double b1 = (double)(2.0L*e);
-        double c1 = (double)(e*e - 4.0L*g);
-        double d1 = (double)(-f*f);
+        long double b1 = 2.0L*e;
+        long double c1 = e*e - 4.0L*g;
+        long double d1 = -f*f;
         double qr1 = 0;
         double qr2 = 0;
         double cr3 = 0;
-        int ysc = poly_cubicroots_LD(1.0, b1, c1, d1, -DBL_MAX, DBL_MAX, &qr1, &qr2, &cr3);
+        int ysc = poly_cubicroots_LD(1.0L, b1, c1, d1, -DBL_MAX, DBL_MAX, &qr1, &qr2, &cr3);
         if (ysc == 0) {
             return rCount;
         }
@@ -451,8 +451,10 @@ static int poly_quartroots_LD(long double an, long double bn, long double cn, lo
         long double j = (e + ((long double)h2) - f/h)/2.0L;
         qr1 = 0;
         qr2 = 0;
-        double r1, r2, r3;
-        int cr = poly_quadroots_LD(1.0, h, j, -DBL_MAX, DBL_MAX, &qr1, &qr2);
+        double r1 = INFINITY;
+        double r2 = INFINITY;
+        double r3 = INFINITY;
+        int cr = poly_quadroots_LD(1.0L, h, j, -DBL_MAX, DBL_MAX, &qr1, &qr2);
         if (cr > 0) {
             r1 = qr1 - a_4d;
             if (r1 >= minB && r1 <= maxB) {
@@ -467,7 +469,7 @@ static int poly_quartroots_LD(long double an, long double bn, long double cn, lo
         }
         qr1 = 0;
         qr2 = 0;
-        cr = poly_quadroots_LD(1.0, -h, g/j, -DBL_MAX, DBL_MAX, &qr1, &qr2);
+        cr = poly_quadroots_LD(1.0L, -h, g/j, -DBL_MAX, DBL_MAX, &qr1, &qr2);
         if (cr > 0) {
             r3 = qr1 - a_4d;
             if (r3 >= minB && r3 <= maxB &&
@@ -701,7 +703,7 @@ int poly_quintroots(double a0, double b0, double c0, double d0, double e0, doubl
                           fmaxl(fabsl(b0l),
                                 fmaxl(fabsl(c0l),
                                       fmaxl(fabsl(d0l), fmaxl(fabsl(e0l), fabsl(f0l))))));
-    if ((s < 1 || s > 1e7) && s != 0) {
+    if ((s < 1e-7 || s > 1e7) && s != 0) {
         // Scale the coefficients by a multiple of the exponent of ||coeffs.||
         // so that all the bits in the mantissa are preserved
         int sc = 0;
@@ -773,7 +775,7 @@ int poly_quintroots(double a0, double b0, double c0, double d0, double e0, doubl
     // Calculcate root bounds of the depressed poly (and original quintic by adding |ac/5|)
     // Bounds due to Lagurre, (cf. Samuelson's inequality)
     // Our roots have an arithmetic mean of 0, since y^4's coefficient = 0
-    double rBound = ceil(sqrt((double)(10.0/4.0 * fabs(a))) * 4.0/5.0 + fabs(a_5d));
+    double rBound = ceil(sqrt((double)(10.0/4.0 * fabsl(a))) * 4.0/5.0 + fabs(a_5d));
     // Sort the bounds of the roots
     double rBounds[6] = {-rBound, rBound, rBound, rBound, rBound, rBound};
     int rbCount = 1;
@@ -854,15 +856,15 @@ int poly_quintroots(double a0, double b0, double c0, double d0, double e0, doubl
         APPEND_ROOT5(t0d);
     }
     // Use the found root to deflate the quintic into a quartic and solve it
-    double bq = (double)(b0l + a0l*t0);
-    double cq = (double)(c0l + bq*t0);
-    double dq = (double)(d0l + cq*t0);
-    double eq = (double)(e0l + dq*t0);
+    long double bq = b0l + a0l*t0;
+    long double cq = c0l + bq*t0;
+    long double dq = d0l + cq*t0;
+    long double eq = e0l + dq*t0;
     int qrs = 0;
     if (isT0Root) {
-        qrs = poly_quartroots_LD(a0, bq, cq, dq, eq, minB, maxB, x2, x3, x4, x5, 0);
+        qrs = poly_quartroots_LD(a0l, bq, cq, dq, eq, minB, maxB, x2, x3, x4, x5, 0);
     } else {
-        qrs = poly_quartroots_LD(a0, bq, cq, dq, eq, minB, maxB, x1, x2, x3, x4, 0);
+        qrs = poly_quartroots_LD(a0l, bq, cq, dq, eq, minB, maxB, x1, x2, x3, x4, 0);
     }
     rCount = rCount + qrs;
     if (rCount > 0 && rCount <= 5) {
