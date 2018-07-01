@@ -11,6 +11,11 @@
  *
  */
 
+/**
+ * Evaluate the discriminant of a quadratic `ax^2 - 2b + c = 0`.
+ * D = b^2 - a*c. using more accuretely than double precision.
+ */
+double poly_discriminant(double a, double b, double c);
 
 /**
  * Solve a quadratic equation, using numerically stable methods,

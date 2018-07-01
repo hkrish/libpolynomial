@@ -35,7 +35,7 @@
  * Insertion sort, for sorting roots and root bounds.
  * (number of elements are less that 6)
  */
-static void isort(double *arr, int n)
+static inline void isort(double *arr, int n)
 {
     for (int i = 1; i < n; i++) {
         double elem = arr[i];
@@ -55,7 +55,7 @@ static void isort(double *arr, int n)
  * Extra-Precise Arithmetic" - Kahan W
  */
 static __m128d __attribute__((const))
-_DD_split(double X)
+_DD_split(const double X)
 {
     double bigX = X * 134217729;  // = X*(2^27 + 1)
     double Y = (X - bigX);
@@ -68,7 +68,8 @@ _DD_split(double X)
  * Evaluate the discriminant of a quadratic `ax^2 - 2b + c = 0`.
  * D = b^2 - a*c.
  */
-static double poly_discriminant(double a, double b, double c)
+EXPORT
+double poly_discriminant(double a, double b, double c)
 {
     __m128d ad = _DD_split(a);
     __m128d bd = _DD_split(b);
