@@ -2,3 +2,4 @@
 res_*.txt
 tests
 build/
+examples/compiled/
