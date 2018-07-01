@@ -68,8 +68,7 @@ _DD_split(const double X)
  * Evaluate the discriminant of a quadratic `ax^2 - 2b + c = 0`.
  * D = b^2 - a*c.
  */
-EXPORT
-double poly_discriminant(double a, double b, double c)
+static double poly_discriminant(double a, double b, double c)
 {
     __m128d ad = _DD_split(a);
     __m128d bd = _DD_split(b);

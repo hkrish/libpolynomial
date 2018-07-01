@@ -1,19 +1,20 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-# set(LLVM_PATH "/usr/local/opt/llvm")
 
+# set(CMAKE_C_COMPILER "gcc-6")
+# set(LLVM_PATH "/usr/local/opt/llvm")
 # set(CMAKE_C_COMPILER "${LLVM_PATH}/bin/clang")
 # set(CMAKE_CXX_COMPILER "${LLVM_PATH}/bin/clang++")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11")
 
-project(libPolynomial5 LANGUAGES C CXX)
+project(libPolynomial5 LANGUAGES C)
 
-set(CMAKE_C_FLAGS_RELEASE "-O3 -Wall -Wpedantic")
+set(CMAKE_C_FLAGS_RELEASE "-O2 -Wall -Wpedantic")
 set(CMAKE_C_FLAGS_DEBUG "-g -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpmath=sse -msse2")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
 
 include_directories(
   )
