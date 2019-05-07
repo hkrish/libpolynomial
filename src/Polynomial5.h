@@ -3,11 +3,11 @@
 #define Polynomial_h__
 
 /*!
- * File: Polynomial.h
+ * File: Polynomial5.h
  *
  * Root finding for upto quintic polynomials.
  *
- * Copyright © 2017 Harikrishnan Gopalakrishnan. All rights reserved.
+ * Copyright © 2019 Harikrishnan Gopalakrishnan. All rights reserved.
  *
  */
 
