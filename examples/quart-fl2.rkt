@@ -38,7 +38,7 @@
                                     -> (take (list x1 x2 x3 x4) r)))
 
 (define-libm frexp (_fun _double (e : (_ptr o _int))
-                         -> (m : _double) -> e))
+                         -> (m : _double)))
 
 (define-libm scalbn (_fun _double _int -> _double))
 
@@ -262,15 +262,15 @@
      (sort rs < #:key car)]))
 
 
-(define roots (apply poly_quartroots coeffs))
-;; (displayln roots)
+;; (define roots (apply poly_quartroots coeffs))
+;; ;; (displayln roots)
 
-(define (abs-errors a b)
-  (for/list ([r (in-list a)]
-             [ro (in-list b)])
-    (if (list? r)
-        (lv- r ro)
-        (- r ro))))
+;; (define (abs-errors a b)
+;;   (for/list ([r (in-list a)]
+;;              [ro (in-list b)])
+;;     (if (list? r)
+;;         (lv- r ro)
+;;         (- r ro))))
 
 (define eval-c
   (curry (lambda (coeffs x)
@@ -278,14 +278,14 @@
                      ([c (in-list coeffs)])
              (lv+ (lv* v x) c)))))
 
-(define eval-e
-  (curry (lambda (coeffs x)
-           (define ex (if (list? x) (lv-re x) (inexact->exact x)))
-           (exact->inexact (for/fold ([v 0])
-                                     ([c (in-list (map inexact->exact coeffs))])
-                             (+ (* v ex) c))))))
+;; (define eval-e
+;;   (curry (lambda (coeffs x)
+;;            (define ex (if (list? x) (lv-re x) (inexact->exact x)))
+;;            (exact->inexact (for/fold ([v 0])
+;;                                      ([c (in-list (map inexact->exact coeffs))])
+;;                              (+ (* v ex) c))))))
 
-(define (print-coeffs cs) (displayln (string-join (map number->string cs) ", ")))
+;; (define (print-coeffs cs) (displayln (string-join (map number->string cs) ", ")))
 
 (define (polyD cs)
   (define d (sub1 (length cs)))
@@ -301,10 +301,10 @@
             r
             (polish coeffs (sub1 n) (lv- r (lv/ (eval-c coeffs r) qd)))))))
 
-(define rs (quartroot2 coeffs))
-(define crs (apply poly_quartroots coeffs))
-;; (abs-errors roots rts)
+;; (define rs (quartroot2 coeffs))
+;; (define crs (apply poly_quartroots coeffs))
+;; ;; (abs-errors roots rts)
 
-rts
-crs
-rs
+;; rts
+;; crs
+;; rs
